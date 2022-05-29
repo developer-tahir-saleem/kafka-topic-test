@@ -43,11 +43,49 @@ public class ConsumerServiceIntegrationTest {
     @Autowired
     private ExampleRepository exampleRepository;
 
+    @Autowired
+    private ConsumerService producerService;
+
     public ExampleDTO mockExampleDTO(String name, String description) {
         ExampleDTO exampleDTO = new ExampleDTO();
         exampleDTO.setDescription(description);
         exampleDTO.setName(name);
         return exampleDTO;
+    }
+
+    /**
+     * We verify the output in the topic. But aslo in the object variable .
+     */
+    @Test
+    public void itShould_ConsumeCorrectExampleDTO_from_TOPIC_EXAMPLE_and_should_stateCorrectExampleEntityOnObjectVariable() throws ExecutionException, InterruptedException {
+        // GIVEN
+        ExampleDTO exampleDTO = mockExampleDTO("Un nom 2", "Une description 2");
+        // simulation consumer
+        Map<String, Object> producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker.getBrokersAsString());
+        log.info("props {}", producerProps);
+        Producer<String, ExampleDTO> producerTest = new KafkaProducer(producerProps, new StringSerializer(), new JsonSerializer<ExampleDTO>());
+        // Or
+        // ProducerFactory producerFactory = new DefaultKafkaProducerFactory<String, ExampleDTO>(producerProps, new StringSerializer(), new JsonSerializer<ExampleDTO>());
+        // Producer<String, ExampleDTO> producerTest = producerFactory.createProducer();
+        // Or
+        // ProducerRecord<String, ExampleDTO> producerRecord = new ProducerRecord<String, ExampleDTO>(TOPIC_EXAMPLE, "key", exampleDTO);
+        // KafkaTemplate<String, ExampleDTO> template = new KafkaTemplate<>(producerFactory);
+        // template.setDefaultTopic(TOPIC_EXAMPLE);
+        // template.send(producerRecord);
+        // WHEN
+        producerTest.send(new ProducerRecord(TOPIC_EXAMPLE, "", exampleDTO));
+        // THEN
+        // we must have 1 entity inserted
+        // We cannot predict when the insertion into the database will occur. So we wait until the value is present. Thank to Awaitility.
+        await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+//            var exampleEntityList = exampleRepository.findAll();
+//            assertEquals(1, exampleEntityList.size());
+//            ExampleEntity firstEntity = exampleEntityList.get(0);
+            ExampleDTO firstEntity = producerService.verifyDto;
+            assertEquals(exampleDTO.getDescription(), firstEntity.getDescription());
+            assertEquals(exampleDTO.getName(), firstEntity.getName());
+        });
+        producerTest.close();
     }
 
     /**
@@ -74,13 +112,14 @@ public class ConsumerServiceIntegrationTest {
         // THEN
         // we must have 1 entity inserted
         // We cannot predict when the insertion into the database will occur. So we wait until the value is present. Thank to Awaitility.
-        await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+//        await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+
             var exampleEntityList = exampleRepository.findAll();
-            assertEquals(1, exampleEntityList.size());
+            assertEquals(2, exampleEntityList.size());
             ExampleEntity firstEntity = exampleEntityList.get(0);
             assertEquals(exampleDTO.getDescription(), firstEntity.getDescription());
             assertEquals(exampleDTO.getName(), firstEntity.getName());
-        });
+//        });
         producerTest.close();
     }
 }

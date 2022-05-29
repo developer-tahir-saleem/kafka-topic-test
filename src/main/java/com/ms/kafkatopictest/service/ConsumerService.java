@@ -14,6 +14,13 @@ import org.springframework.stereotype.Service;
 public class ConsumerService {
     Logger log = LoggerFactory.getLogger(ConsumerService.class);
 
+
+    public ExampleDTO  verifyDto;
+
+    ConsumerService(){
+        this.verifyDto = new ExampleDTO();
+    }
+
     @Autowired
     private ExampleRepository exampleRepository;
 
@@ -33,6 +40,7 @@ public class ConsumerService {
         log.info("Received from topic=TOPIC_EXAMPLE ExampleDTO={}", exampleDTO);
         exampleRepository.save(convertToExampleEntity(exampleDTO));
         log.info("saved in database {}", exampleDTO);
+        verifyDto=exampleDTO;
     }
 
     /**

@@ -63,8 +63,8 @@ public class ProducerServiceIntegrationTest {
         ConsumerRecord<String, ExampleDTO> consumerRecordOfExampleDTO = KafkaTestUtils.getSingleRecord(consumerServiceTest, TOPIC_EXAMPLE_EXTERNE);
         ExampleDTO valueReceived = consumerRecordOfExampleDTO.value();
 
-        assertEquals("Une description", valueReceived.getDescription());
-        assertEquals("Un nom", valueReceived.getName());
+        assertEquals(exampleDTO.getDescription(), valueReceived.getDescription());
+        assertEquals(exampleDTO.getName(), valueReceived.getName());
 
         consumerServiceTest.close();
     }
