@@ -48,24 +48,25 @@ public class ProducerServiceIntegrationTest {
      */
     @Test
     public void itShould_ProduceCorrectExampleDTO_to_TOPIC_EXAMPLE_EXTERNE() {
-        // GIVEN
-        ExampleDTO exampleDTO = mockExampleDTO("Un nom", "Une description");
-        // simulation consumer
+        // GIVEN create mock data object
+        ExampleDTO exampleDTO = mockExampleDTO("Name", "Description");
+        // Setup Embedded kafka consumer simulation
         Map<String, Object> consumerProps = KafkaTestUtils.consumerProps("group_consumer_test", "false", embeddedKafkaBroker);
         consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         ConsumerFactory cf = new DefaultKafkaConsumerFactory<String, ExampleDTO>(consumerProps, new StringDeserializer(), new JsonDeserializer<>(ExampleDTO.class, false));
         Consumer<String, ExampleDTO> consumerServiceTest = cf.createConsumer();
-
         embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumerServiceTest, TOPIC_EXAMPLE_EXTERNE);
-        // WHEN
+
+        // WHEN send mock data to our implemented producer kafka service class
         producerService.send(exampleDTO);
-        // THEN
+        // THEN the embedded kafka consumer topic received the data
         ConsumerRecord<String, ExampleDTO> consumerRecordOfExampleDTO = KafkaTestUtils.getSingleRecord(consumerServiceTest, TOPIC_EXAMPLE_EXTERNE);
         ExampleDTO valueReceived = consumerRecordOfExampleDTO.value();
 
+        //AND the mock data match with consumer data
         assertEquals(exampleDTO.getDescription(), valueReceived.getDescription());
         assertEquals(exampleDTO.getName(), valueReceived.getName());
-
+        //END
         consumerServiceTest.close();
     }
 }
